@@ -1,0 +1,125 @@
+---
+title: "Getting Started with didhelpers: Diagnosing Your DiD Design"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Getting Started with didhelpers: Diagnosing Your DiD Design}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 7,
+  fig.height = 5
+)
+```
+
+## Overview
+
+**didhelpers** provides lightweight diagnostic and visualization utilities for
+staggered difference-in-differences (DiD) designs. It is not a new estimator ---
+rather, it is the companion toolkit you wish you had when setting up a staggered
+DiD analysis.
+
+The package offers three core diagnostics and a convenience wrapper:
+1. **Treatment timing plot** --- see when each unit gets treated.
+2. **Pre-trends test** --- event-study regression to check the parallel trends assumption.
+3. **Bacon decomposition summary** --- understand which 2x2 comparisons drive your TWFE estimate.
+4. **Full diagnostics report** --- run everything at once.
+
+## Setup
+
+```{r setup}
+library(didhelpers)
+```
+
+We will use the package's built-in simulated dataset, which has 30 units
+observed over 15 time periods with staggered treatment adoption across four
+cohorts (including a never-treated group). The true ATT is 2.0, and there are
+no pre-trends by construction.
+
+```{r data}
+data("staggered_data")
+head(staggered_data)
+table(staggered_data$cohort)
+```
+
+## 1. Plot Treatment Timing
+
+The first step in any staggered DiD analysis is understanding the treatment
+variation in your panel. `plot_treatment_timing()` produces a heatmap showing
+when each unit switches from untreated to treated:
+
+```{r treatment-timing}
+plot_treatment_timing(staggered_data, unit, time, treat)
+```
+
+Units are grouped by treatment cohort on the y-axis. This makes it easy to
+spot the staggered adoption pattern and identify never-treated units.
+
+## 2. Test Pre-Trends
+
+The parallel trends assumption is central to any DiD design.
+`test_pretrends()` runs an event-study regression with unit and time fixed
+effects and returns pre-treatment lead coefficients:
+```{r pretrends}
+pt <- test_pretrends(staggered_data, unit, time, outcome, treat, n_lags = 3)
+pt$coefficients
+```
+
+The joint F-test checks whether all pre-treatment coefficients are jointly
+zero:
+
+```{r ftest}
+pt$f_test
+```
+
+Since our simulated data has no true pre-trends, the lead coefficients should
+be small and statistically insignificant. The `autoplot()` method produces the
+classic event-study coefficient plot:
+
+```{r es-plot}
+ggplot2::autoplot(pt)
+```
+
+## 3. Bacon Decomposition
+
+Goodman-Bacon (2021) showed that the two-way fixed effects (TWFE) estimator
+is a weighted average of all possible 2x2 DD comparisons. Some of these
+comparisons may use already-treated units as controls, leading to potential
+bias. `bacon_weight_summary()` provides a clean summary:
+
+```{r bacon}
+bs <- bacon_weight_summary(staggered_data, unit, time, outcome, treat)
+bs$summary
+```
+
+The scatter plot shows each 2x2 comparison's estimate against its weight,
+colored by comparison type:
+
+```{r bacon-plot}
+bs$plot
+```
+
+## 4. Full Diagnostics Report
+
+For a quick overview, `did_diagnostics_report()` runs all three diagnostics
+at once:
+
+```{r report}
+report <- did_diagnostics_report(staggered_data, unit, time, outcome, treat)
+report
+```
+
+Individual components are accessible via `report$treatment_plot`,
+`report$pretrends`, and `report$bacon`.
+
+## Next Steps
+These diagnostics help you decide whether a standard TWFE estimator is
+appropriate for your data. If the Bacon decomposition reveals substantial
+weight on problematic comparisons (e.g., already-treated as controls), or if
+pre-trends tests fail, consider robust estimators such as those in the
+[DIDmultiplegt](https://github.com/chaisemartinPackages/did_multiplegt_dyn)
+family of packages.
