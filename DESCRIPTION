@@ -2,7 +2,7 @@ Package: didhelpers
 Title: Diagnostic and Visualization Utilities for Difference-in-Differences Designs
 Version: 0.1.0
 Authors@R:
-    person("Stefano", "Graziosi", , "stefano.graziosi@example.com", role = c("aut", "cre"))
+    person("Stefano", "Graziosi", , "stefano.graziosi@studbocconi.it", role = c("aut", "cre"))
 Description: Lightweight diagnostic and visualization utilities for staggered
     difference-in-differences designs. Provides functions for plotting treatment
     timing, testing pre-trends via event-study regressions, summarizing
