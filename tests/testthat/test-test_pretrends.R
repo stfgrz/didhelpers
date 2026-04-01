@@ -7,8 +7,10 @@ test_that("test_pretrends returns correct structure", {
   # Coefficients tibble
 
   expect_s3_class(pt$coefficients, "tbl_df")
-  expect_true(all(c("term", "estimate", "std_error", "statistic",
-                     "p_value", "rel_time") %in% names(pt$coefficients)))
+  expect_true(all(c(
+    "term", "estimate", "std_error", "statistic",
+    "p_value", "rel_time"
+  ) %in% names(pt$coefficients)))
 
   # Should have lead and lag terms
   terms <- pt$coefficients$term

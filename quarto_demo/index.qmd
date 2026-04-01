@@ -1,0 +1,93 @@
+---
+title: "didhelpers Demonstration"
+author: "Stefano Graziosi"
+date: "`r Sys.Date()`"
+format:
+  html:
+    theme: cosmo
+    toc: true
+    code-fold: true
+execute:
+  warning: false
+  message: false
+---
+
+## Introduction
+
+This document provides a comprehensive demonstration of the **`didhelpers`** R package. Designed as a lightweight toolkit for staggered Difference-in-Differences (DiD) designs, it allows researchers to easily diagnose, visualize, and summarize their empirical strategies.
+
+Below, we load the package, leverage the built-in dataset, and sequentially apply all four core diagnostic functions.
+
+## Setup & Data
+
+First, let's load the required packages and the sample dataset.
+
+```{r setup}
+# Load the newly installed package
+library(didhelpers)
+library(ggplot2)
+
+# Load the built-in staggered dataset
+data("staggered_data")
+
+# Preview the data structure
+head(staggered_data)
+```
+
+## Function 1: `plot_treatment_timing()` 🗺️
+
+Before jumping into regressions, we visualize when treatment adoption occurs across different cohort groups.
+
+```{r treatment-timing, fig.width=8, fig.height=5}
+# Generates a heatmap of treatment rollout
+plot_treatment_timing(staggered_data, unit, time, treat)
+```
+
+## Function 2: `test_pretrends()` 📈
+
+To visually inspect the parallel trends assumption, we run an event-study regression with time and unit fixed effects. This function calculates the coefficients and automatically generates a pre-trend F-test.
+
+```{r pretrends, fig.width=8, fig.height=5}
+# Run the event study
+pt_model <- test_pretrends(staggered_data, unit, time, outcome, treat)
+
+# Inspect raw coefficients and standard errors
+print(pt_model$coefficients)
+
+# Render the coefficient plot
+autoplot(pt_model) +
+  labs(title = "Event Study: Assessing Parallel Trends",
+       subtitle = "Reference: Period before treatment (t = -1)")
+```
+
+## Function 3: `bacon_weight_summary()` ⚖️
+
+When running Two-Way Fixed Effects (TWFE) with staggered timing, the final estimator is a weighted average of many underneath 2x2 comparisons. We use the Goodman-Bacon decomposition to summarize exactly how much weight is placed on 'clean' comparisons versus potentially biased 'already-treated' comparisons.
+
+```{r bacon-weights, fig.width=8, fig.height=5}
+# Run the Bacon Decomposition
+bacon_decomp <- bacon_weight_summary(staggered_data, unit, time, outcome, treat)
+
+# View the tabular summary of weights by comparison type
+knitr::kable(bacon_decomp$summary, digits = 3)
+
+# Visualize the underlying estimates vs. their assigned weight
+bacon_decomp$plot +
+  labs(title = "Goodman-Bacon Decomposition Weights")
+```
+
+## Function 4: `did_diagnostics_report()` 📑
+
+Finally, `didhelpers` provides a single wrapper function to generate a consolidated report, compiling the results of all the functions above simultaneously.
+
+```{r report}
+# Run the all-in-one report
+final_report <- did_diagnostics_report(staggered_data, unit, time, outcome, treat)
+
+# Print the final report structure
+print(final_report)
+```
+
+## Conclusion
+
+The `didhelpers` package provides a standardized, easily reportable toolkit to diagnose modern DiD estimators. This Quarto template perfectly showcases its ease of use under a tidy framework!
