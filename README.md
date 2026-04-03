@@ -6,69 +6,136 @@
 [![Lifecycle: experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
 <!-- badges: end -->
 
-**`didhelpers`** is a lightweight, high-performance R toolkit designed to provide diagnostic and visualization utilities for staggered Difference-in-Differences (DiD) designs.
+**`didhelpers`** is a lightweight R toolkit providing diagnostic and visualization utilities for staggered Difference-in-Differences (DiD) designs.
 
-Rather than introducing a brand new estimator, `didhelpers` acts as the ultimate **companion toolkit** for your analysis workflow. It helps you quickly validate core DiD assumptions, visualize treatment rollouts across cohorts, and generate comprehensive diagnostics—all in just a few lines of code.
+Rather than introducing a new estimator, `didhelpers` acts as the ultimate **companion toolkit** for your analysis workflow — helping you validate core DiD assumptions, visualize treatment rollouts, generate comprehensive diagnostics, and export publication-quality tables and figures, all in just a few lines of code.
 
 <hr/>
 
-## 🚀 Features
-
-The package revolves around four core functions designed to streamline your structural modeling workflows:
+## 🚀 Core Diagnostics
 
 | Function | Description |
 |---|---|
-| 🗺️ **`plot_treatment_timing()`** | Generates a clean heatmap of treatment adoption across units and time periods. Perfect for understanding staggered cohort rollouts before estimation. |
-| 📈 **`test_pretrends()`** | Efficiently runs an event-study regression applying unit and time fixed effects. Computes a pre-trend F-test and outputs an elegant, customizable `ggplot2` coefficient plot to visually assess the parallel trends assumption. |
-| ⚖️ **`bacon_weight_summary()`** | Implements the Goodman-Bacon (2021) decomposition. Outputs a tidy summary table comparing the weights of all 2x2 DiD comparisons driving the overall TWFE estimate, along with a diagnostic scatter plot. |
-| 📑 **`did_diagnostics_report()`** | An all-in-one wrapper that automatically executes all three of the diagnostics above, returning a consolidated report. |
+| 🗺️ **`plot_treatment_timing()`** | Heatmap of treatment adoption across units and time periods. Perfect for understanding staggered cohort rollouts before estimation. |
+| 📈 **`test_pretrends()`** | Event-study regression with unit and time fixed effects. Computes a joint pre-trend F-test and returns a customizable `ggplot2` coefficient plot. |
+| ⚖️ **`bacon_weight_summary()`** | Goodman-Bacon (2021) decomposition. Tidy summary of all 2×2 DiD comparison weights driving the TWFE estimate, plus a diagnostic scatter plot. |
+| 📑 **`did_diagnostics_report()`** | All-in-one wrapper that runs all three diagnostics and returns a consolidated report. |
+
+## 🖨️ Output & Export
+
+All diagnostic objects are first-class R citizens with a full suite of output methods:
+
+| Method / Function | What it does |
+|---|---|
+| `print()`, `summary()` | Compact, fixest-style console output with significance stars and fit statistics |
+| `plot()`, `autoplot()` | ggplot2 plots with confidence bands, reference lines, and clear labelling |
+| `tidy()`, `glance()`, `augment()` | broom-convention output for seamless tidyverse and **modelsummary** integration |
+| `as_table()` | Publication-ready **gt** or **kableExtra** tables for RMarkdown / Quarto |
+| `export_pretrends_table()` | One-call LaTeX, Word, HTML, or Markdown export via **modelsummary** |
 
 ## 📦 Installation
-
-You can install the development version of `didhelpers` directly from GitHub via [`devtools`](https://devtools.r-lib.org/):
 
 ```r
 # install.packages("devtools")
 devtools::install_github("stefanograziosi/didhelpers")
 ```
 
-## 💡 Quick Start
+Optional dependencies unlock additional output formats:
 
-Here is a quick walkthrough using the package's built-in `staggered_data`. The functions are designed with non-standard evaluation, making them incredibly intuitive to use inside tidy pipelines.
+```r
+# gt / kableExtra tables
+install.packages(c("gt", "kableExtra"))
+
+# LaTeX / Word export
+install.packages("modelsummary")
+
+# Composite diagnostic plot (plot.did_report)
+install.packages("patchwork")
+```
+
+## 💡 Quick Start
 
 ```r
 library(didhelpers)
-library(ggplot2) # For customizing automatic plots
+library(ggplot2)
 
-# Load the built-in sample data
 data("staggered_data")
 
-# 1. Visualize Treatment Timing Rollout
+# ── 1. Treatment timing heatmap ─────────────────────────────────────────────
 plot_treatment_timing(staggered_data, unit, time, treat)
 
-# 2. Test Parallel Trends Assumption
+# ── 2. Pre-trends test ───────────────────────────────────────────────────────
 pt <- test_pretrends(staggered_data, unit, time, outcome, treat)
-pt$coefficients          # Inspect raw event-study coefficients and standard errors
-autoplot(pt)             # Automatically renders the coefficient plot
+pt                        # Clean console summary
+summary(pt)               # R-squared, adj. R-squared
+autoplot(pt)              # Event-study coefficient plot
+plot(pt)                  # Same, via plot()
 
-# 3. Goodman-Bacon Decomposition
+# ── 3. Bacon decomposition ───────────────────────────────────────────────────
 bs <- bacon_weight_summary(staggered_data, unit, time, outcome, treat)
-bs$summary               # Tabular breakdown of 2x2 decomposition weights
-bs$plot                  # Visual scatter plot of component weights
+bs                        # TWFE estimate, per-type breakdown
+autoplot(bs)              # Scatter plot of 2×2 estimates vs. weights
 
-# 4. Generate an All-in-One Diagnostic Report
+# ── 4. All-in-one report ─────────────────────────────────────────────────────
 report <- did_diagnostics_report(staggered_data, unit, time, outcome, treat)
 report
+plot(report)              # Composite figure (requires patchwork)
 ```
 
-For a more detailed walkthrough and interpretation guidelines, check out the [Getting Started Vignette](vignettes/getting-started.Rmd).
+## 📊 Broom & modelsummary Integration
+
+```r
+# Tidy coefficient table (broom-convention column names)
+tidy(pt)
+tidy(pt, conf.int = TRUE, conf.level = 0.90)
+
+# One-row model statistics
+glance(pt)
+glance(bs)
+
+# Fitted values and residuals
+augment(pt)
+
+# Regression table — works automatically once tidy/glance are defined
+library(modelsummary)
+modelsummary(list("Event-Study" = pt))
+
+# Convenience wrapper with format shortcuts
+export_pretrends_table(pt, output = "latex")
+export_pretrends_table(pt, output = "my_table.docx")
+```
+
+## 📋 Publication Tables
+
+```r
+# gt table (default in Quarto)
+as_table(pt, format = "gt")
+as_table(bs, format = "gt")
+
+# kableExtra table (PDF / classic RMarkdown)
+as_table(pt, format = "kable")
+as_table(bs, format = "kable")
+```
+
+## 🔗 Relationship to Other Packages
+
+`didhelpers` is a *diagnostic companion*, not a replacement for any estimator package.
+
+| Package | Relationship |
+|:--------|:-------------|
+| **bacondecomp** | Hard dependency — `bacon_weight_summary()` wraps it, adding S3 class, broom methods, and table export. |
+| **fixest** | Hard dependency — `test_pretrends()` uses `feols()` internally. fixest's `iplot()` is more flexible for fixest-native users; didhelpers bundles event-study + F-test + broom in one call. |
+| **HonestDiD** | Complementary — sensitivity analysis for parallel trends violations, used *after* `test_pretrends()`. |
+| **did2s** | No overlap — Gardner (2022) imputation estimator; didhelpers diagnoses TWFE, did2s replaces it. |
+| **DIDmultiplegt** | No overlap — robust DiD estimators; use didhelpers to diagnose the data first. |
+| **staggered** | Minimal overlap — plots its own robust estimates; didhelpers plots TWFE diagnostics. |
 
 ## ⚙️ Under the Hood
 
-To maintain scale and speed, `didhelpers` relies heavily on highly-optimized backend engines:
-* **[`fixest`](https://lrberge.github.io/fixest/)**: Powers all regression modeling with lightning-fast fixed effects estimations.
-* **[`ggplot2`](https://ggplot2.tidyverse.org/)**: Renders all visual outputs, allowing users full control to append themes and further customize plots.
-* **[`bacondecomp`](https://github.com/evanflack/bacondecomp)**: Computes the exact Bacon decomposition statistics.
+* **[`fixest`](https://lrberge.github.io/fixest/)** — lightning-fast fixed effects regression
+* **[`ggplot2`](https://ggplot2.tidyverse.org/)** — all visual output, fully composable with `+ theme_*()`
+* **[`bacondecomp`](https://github.com/evanflack/bacondecomp)** — exact Bacon decomposition statistics
+* **[`generics`](https://generics.r-lib.org/)** — lightweight re-export of `tidy()`, `glance()`, `augment()`
 
 ## 📄 License
 
