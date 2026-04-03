@@ -17,15 +17,21 @@ Imports:
     bacondecomp,
     dplyr,
     fixest,
+    generics,
     ggplot2,
     rlang,
     stats,
     tibble
 Suggests:
-    tidyr,
+    flextable,
+    gt,
+    kableExtra,
     knitr,
+    modelsummary,
+    patchwork,
     rmarkdown,
-    testthat (>= 3.0.0)
+    testthat (>= 3.0.0),
+    tidyr
 Config/testthat/edition: 3
 VignetteBuilder: knitr
 Depends:

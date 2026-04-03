@@ -1,0 +1,173 @@
+---
+title: "Publishing Tables and Figures from didhelpers"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Publishing Tables and Figures from didhelpers}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 7,
+  fig.height = 5
+)
+```
+
+## Overview
+
+This vignette demonstrates how to turn **didhelpers** diagnostic output into
+publication-quality tables and figures suitable for academic papers, slide decks,
+and reports.
+
+We cover four output paths:
+
+1. **gt / kableExtra tables** via `as_table()`
+2. **broom-style tidy output** via `tidy()`, `glance()`, `augment()`
+3. **Regression tables** via `modelsummary` (LaTeX, Word, HTML)
+4. **Customized ggplot2 figures** for publication
+
+## Setup
+
+```{r setup}
+library(didhelpers)
+data("staggered_data")
+
+# Run diagnostics
+pt <- test_pretrends(staggered_data, unit, time, outcome, treat, n_lags = 3)
+bs <- bacon_weight_summary(staggered_data, unit, time, outcome, treat)
+```
+
+## 1. Publication Tables with gt
+
+The `as_table()` function produces formatted tables for direct inclusion in
+RMarkdown and Quarto documents.
+
+```{r gt-pretrends, eval = requireNamespace("gt", quietly = TRUE)}
+as_table(pt, format = "gt")
+```
+
+```{r gt-bacon, eval = requireNamespace("gt", quietly = TRUE)}
+as_table(bs, format = "gt")
+```
+
+For kableExtra output (better for LaTeX/PDF documents), use `format = "kable"`:
+
+```{r kable-pretrends, eval = requireNamespace("kableExtra", quietly = TRUE)}
+as_table(pt, format = "kable")
+```
+
+## 2. Broom Integration
+
+The `tidy()`, `glance()`, and `augment()` methods make didhelpers objects work
+seamlessly in tidyverse workflows.
+
+### Tidy coefficients
+
+```{r tidy}
+tidy(pt)
+```
+
+### Model-level statistics
+
+```{r glance}
+glance(pt)
+```
+
+### Fitted values and residuals
+
+```{r augment}
+head(augment(pt))
+```
+### Bacon decomposition
+
+```{r tidy-bacon}
+# Per-type summary
+tidy(bs, type = "summary")
+
+# All 2x2 comparisons
+tidy(bs, type = "two_by_twos")
+
+# Decomposition-level stats
+glance(bs)
+```
+
+## 3. LaTeX and Word Export via modelsummary
+
+With broom methods in place, `modelsummary` works automatically. This is the
+recommended path for regression tables in academic papers.
+
+```{r modelsummary-default, eval = requireNamespace("modelsummary", quietly = TRUE)}
+# Interactive HTML/gt display
+export_pretrends_table(pt)
+```
+
+```{r modelsummary-latex, eval = requireNamespace("modelsummary", quietly = TRUE)}
+# LaTeX output (paste into your .tex file)
+export_pretrends_table(pt, output = "latex")
+```
+
+To export directly to a Word document:
+
+```r
+# Save to .docx (requires flextable)
+export_pretrends_table(pt, output = "my_table.docx")
+```
+
+### Why modelsummary?
+
+| Package      | S3 extensible | LaTeX | Word | Maintained |
+|:-------------|:-------------:|:-----:|:----:|:----------:|
+| modelsummary | Yes           | Yes   | Yes  | Yes        |
+| stargazer    | No            | Yes   | No   | No (2022)  |
+| huxtable     | Partial       | Yes   | Yes  | Yes        |
+
+**modelsummary** is the best fit because it uses `tidy()` and `glance()`
+automatically, supports all output formats, and integrates with gt and
+kableExtra.
+
+## 4. Publication-Ready Figures
+
+All plot methods return ggplot2 objects that can be further customized.
+
+### Event-study plot
+
+```{r pub-esplot}
+library(ggplot2)
+autoplot(pt) +
+  theme_classic(base_size = 12) +
+  labs(title = NULL, caption = NULL) +
+  theme(legend.position = "none")
+```
+
+### Bacon decomposition plot
+
+```{r pub-bacon}
+autoplot(bs) +
+  theme_classic(base_size = 12) +
+  labs(title = NULL) +
+  theme(legend.position = "bottom")
+```
+
+### Composite report figure
+
+```{r pub-composite, eval = requireNamespace("patchwork", quietly = TRUE), fig.width = 10, fig.height = 8}
+report <- did_diagnostics_report(staggered_data, unit, time, outcome, treat)
+plot(report)
+```
+
+## Summary
+
+| Task                        | Function / Method                          |
+|:----------------------------|:-------------------------------------------|
+| Console summary             | `print()`, `summary()`                     |
+| Tidy coefficient table      | `tidy(pt)`                                 |
+| Model-level stats           | `glance(pt)`                               |
+| gt / kableExtra table       | `as_table(pt)`, `as_table(bs)`             |
+| LaTeX regression table      | `export_pretrends_table(pt, output = "latex")` |
+| Word regression table       | `export_pretrends_table(pt, output = "file.docx")` |
+| modelsummary (direct)       | `modelsummary::modelsummary(list(pt))`     |
+| Publication ggplot2 figures | `autoplot(pt) + theme_classic()`           |
+| Composite diagnostics plot  | `plot(report)` (requires patchwork)        |

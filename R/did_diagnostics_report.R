@@ -41,6 +41,9 @@ did_diagnostics_report <- function(data, unit, time, outcome, treat,
 
 #' Print a DiD Diagnostics Report
 #'
+#' Prints a structured console summary of all DiD diagnostics, delegating to
+#' [print.pretrends_test()] and [print.bacon_summary()] for each section.
+#'
 #' @param x A `did_report` object.
 #' @param ... Additional arguments (currently unused).
 #'
@@ -48,41 +51,25 @@ did_diagnostics_report <- function(data, unit, time, outcome, treat,
 #'
 #' @export
 print.did_report <- function(x, ...) {
-  cat("=== DiD Diagnostics Report ===\n\n")
+  width <- getOption("width", 80)
+  rule  <- paste(rep("=", min(width, 60)), collapse = "")
 
-  cat("1. Treatment timing plot: ready (access via $treatment_plot)\n\n")
+  cat(rule, "\n")
+  cat("DiD Diagnostics Report\n")
+  cat(rule, "\n\n")
 
-  cat("2. Pre-trends test:\n")
-  pre_coefs <- x$pretrends$coefficients
-  pre_leads <- pre_coefs[grepl("^lead_", pre_coefs$term), ]
-  cat("   Lead coefficients:\n")
-  for (i in seq_len(nrow(pre_leads))) {
-    cat(sprintf(
-      "     %s: %.4f (SE = %.4f, p = %.3f)\n",
-      pre_leads$term[i],
-      pre_leads$estimate[i],
-      pre_leads$std_error[i],
-      pre_leads$p_value[i]
-    ))
-  }
-  cat(sprintf(
-    "   Joint F-test: stat = %.3f, p = %.4f\n\n",
-    x$pretrends$f_test$statistic,
-    x$pretrends$f_test$p_value
-  ))
+  cat("[1] Treatment timing plot: ready (access via $treatment_plot)\n")
+  cat("    Use plot() on this report to display all figures.\n\n")
 
-  cat("3. Bacon decomposition:\n")
-  bs <- x$bacon$summary
-  for (i in seq_len(nrow(bs))) {
-    cat(sprintf(
-      "   %s: weight = %.3f, avg estimate = %.3f (%d comparisons)\n",
-      bs$type[i],
-      bs$total_weight[i],
-      bs$weighted_avg_estimate[i],
-      bs$n_comparisons[i]
-    ))
-  }
+  cat("[2] Pre-trends test\n")
+  cat(paste(rep("-", 40), collapse = ""), "\n")
+  print(x$pretrends, ...)
   cat("\n")
 
+  cat("[3] Bacon decomposition\n")
+  cat(paste(rep("-", 40), collapse = ""), "\n")
+  print(x$bacon, ...)
+
+  cat(rule, "\n")
   invisible(x)
 }

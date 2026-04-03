@@ -116,6 +116,61 @@ report
 Individual components are accessible via `report$treatment_plot`,
 `report$pretrends`, and `report$bacon`.
 
+## 5. Printing and Summaries
+
+All didhelpers objects have clean `print()` and `summary()` methods modelled
+after the output style of **fixest**:
+
+```{r print-pt}
+pt
+```
+
+```{r print-bs}
+bs
+```
+
+The `summary()` method provides additional detail (R-squared, HHI of weights):
+
+```{r summary-pt}
+summary(pt)
+```
+
+```{r summary-bs}
+summary(bs)
+```
+
+## 6. Broom Integration
+
+The `tidy()`, `glance()`, and `augment()` methods enable seamless integration
+with **modelsummary** and tidyverse workflows:
+
+```{r broom-tidy}
+tidy(pt)
+glance(pt)
+```
+
+```{r broom-bacon}
+tidy(bs, type = "summary")
+glance(bs)
+```
+
+See `vignette("publishing-output")` for full details on table export and
+figure customization.
+
+## Relationship to Other Packages
+
+**didhelpers** is a *diagnostic companion*, not a replacement for any
+estimator package. Here is how it relates to the ecosystem:
+
+| Package | Relationship | Notes |
+|:--------|:-------------|:------|
+| **bacondecomp** | Hard dependency | `bacon_weight_summary()` wraps `bacondecomp::bacon()`, adding S3 class, tidy output, broom methods, and gt/kable tables. |
+| **fixest** | Hard dependency | `test_pretrends()` uses `fixest::feols()` internally. fixest's own `iplot()` is more flexible for fixest-native workflows; didhelpers bundles the event-study + F-test + broom integration into a single call. |
+| **HonestDiD** | Complementary | Provides sensitivity analysis for parallel trends violations. No overlap -- could be used *after* `test_pretrends()` flags concerns. |
+| **did2s** | No overlap | Implements the Gardner (2022) imputation estimator. didhelpers diagnoses TWFE; did2s replaces it. |
+| **DIDmultiplegt** | No overlap | Suite of robust DiD estimators. didhelpers could diagnose data *before* running these estimators. |
+| **staggered** | Minimal overlap | Provides Callaway-Sant'Anna and Sun-Abraham estimators with their own plot methods. These plot *estimates* from robust estimators; didhelpers plots *TWFE diagnostics*. |
+
 ## Next Steps
 These diagnostics help you decide whether a standard TWFE estimator is
 appropriate for your data. If the Bacon decomposition reveals substantial
