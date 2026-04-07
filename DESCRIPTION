@@ -25,6 +25,7 @@ Imports:
     stats,
     tibble
 Suggests:
+    broom,
     flextable,
     gt,
     kableExtra,
