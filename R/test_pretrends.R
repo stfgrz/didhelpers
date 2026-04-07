@@ -39,10 +39,27 @@
 #' @importFrom stats as.formula
 #' @export
 test_pretrends <- function(data, unit, time, outcome, treat, n_lags = 3) {
+  if (!is.data.frame(data)) stop("`data` must be a data frame.", call. = FALSE)
+
   unit_str <- rlang::as_label(rlang::enquo(unit))
   time_str <- rlang::as_label(rlang::enquo(time))
   outcome_str <- rlang::as_label(rlang::enquo(outcome))
   treat_str <- rlang::as_label(rlang::enquo(treat))
+
+  required <- c(unit_str, time_str, outcome_str, treat_str)
+  missing_cols <- setdiff(required, names(data))
+  if (length(missing_cols) > 0) {
+    stop("Column(s) not found in `data`: ",
+         paste(missing_cols, collapse = ", "), call. = FALSE)
+  }
+
+  if (!all(data[[treat_str]] %in% c(0L, 1L, 0, 1))) {
+    stop("`", treat_str, "` must be a binary 0/1 indicator.", call. = FALSE)
+  }
+
+  if (!is.numeric(n_lags) || length(n_lags) != 1 || n_lags < 1) {
+    stop("`n_lags` must be a positive integer.", call. = FALSE)
+  }
 
   # Compute relative time
   treated_rows <- data[data[[treat_str]] == 1, ]
@@ -139,11 +156,12 @@ test_pretrends <- function(data, unit, time, outcome, treat, n_lags = 3) {
 
 #' Plot Event-Study Coefficients
 #'
-#' Draws the classic event-study coefficient plot with 95% confidence intervals
+#' Draws the classic event-study coefficient plot with confidence intervals
 #' for a `pretrends_test` object. The omitted reference period (relative
 #' time = -1) is shown as a point at zero.
 #'
 #' @param object A `pretrends_test` object returned by [test_pretrends()].
+#' @param conf.level Confidence level for intervals. Default 0.95.
 #' @param ... Additional arguments (currently unused).
 #'
 #' @return A [ggplot2::ggplot] object.
@@ -151,12 +169,15 @@ test_pretrends <- function(data, unit, time, outcome, treat, n_lags = 3) {
 #' @examples
 #' pt <- test_pretrends(staggered_data, unit, time, outcome, treat, n_lags = 3)
 #' ggplot2::autoplot(pt)
+#' ggplot2::autoplot(pt, conf.level = 0.90)
 #'
 #' @importFrom ggplot2 autoplot ggplot aes geom_pointrange geom_hline geom_vline
 #'   geom_point labs theme_minimal
 #' @export
-autoplot.pretrends_test <- function(object, ...) {
+autoplot.pretrends_test <- function(object, conf.level = 0.95, ...) {
   coefs <- object$coefficients
+  z <- stats::qnorm(1 - (1 - conf.level) / 2)
+  ci_label <- paste0(round(conf.level * 100), "%")
 
   # Add the omitted reference period
   ref_row <- tibble::tibble(
@@ -169,8 +190,8 @@ autoplot.pretrends_test <- function(object, ...) {
   )
   plot_data <- rbind(coefs, ref_row)
   plot_data <- plot_data[order(plot_data$rel_time), ]
-  plot_data$ci_lower <- plot_data$estimate - 1.96 * plot_data$std_error
-  plot_data$ci_upper <- plot_data$estimate + 1.96 * plot_data$std_error
+  plot_data$ci_lower <- plot_data$estimate - z * plot_data$std_error
+  plot_data$ci_upper <- plot_data$estimate + z * plot_data$std_error
   plot_data$is_ref <- plot_data$rel_time == -1
 
   ggplot2::ggplot(plot_data, ggplot2::aes(
@@ -193,7 +214,8 @@ autoplot.pretrends_test <- function(object, ...) {
       x = "Relative time to treatment",
       y = "Estimate",
       title = "Event-Study Coefficients",
-      caption = "Red triangle = omitted reference period (t = -1)"
+      caption = paste0("Red triangle = omitted reference period (t = -1). ",
+                       "Bars = ", ci_label, " CI.")
     ) +
     ggplot2::theme_minimal()
 }

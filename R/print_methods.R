@@ -68,14 +68,14 @@ print.pretrends_test <- function(x, digits = 4, ...) {
 #'
 #' @export
 summary.pretrends_test <- function(object, ...) {
-  sm <- summary(object$model)
+  mod <- object$model
   structure(
     list(
       coefficients  = object$coefficients,
       f_test        = object$f_test,
-      nobs          = stats::nobs(object$model),
-      r.squared     = sm$r2,
-      adj.r.squared = sm$adj.r2
+      nobs          = stats::nobs(mod),
+      r.squared     = fixest::r2(mod, "r2"),
+      adj.r.squared = fixest::r2(mod, "ar2")
     ),
     class = "summary.pretrends_test"
   )

@@ -15,5 +15,6 @@
 Invisibly returns \code{x}.
 }
 \description{
-Print a DiD Diagnostics Report
+Prints a structured console summary of all DiD diagnostics, delegating to
+\code{\link[=print.pretrends_test]{print.pretrends_test()}} and \code{\link[=print.bacon_summary]{print.bacon_summary()}} for each section.
 }

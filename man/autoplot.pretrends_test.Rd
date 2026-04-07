@@ -4,10 +4,12 @@
 \alias{autoplot.pretrends_test}
 \title{Plot Event-Study Coefficients}
 \usage{
-\method{autoplot}{pretrends_test}(object, ...)
+\method{autoplot}{pretrends_test}(object, conf.level = 0.95, ...)
 }
 \arguments{
 \item{object}{A \code{pretrends_test} object returned by \code{\link[=test_pretrends]{test_pretrends()}}.}
+
+\item{conf.level}{Confidence level for intervals. Default 0.95.}
 
 \item{...}{Additional arguments (currently unused).}
 }
@@ -15,12 +17,13 @@
 A \link[ggplot2:ggplot]{ggplot2::ggplot} object.
 }
 \description{
-Draws the classic event-study coefficient plot with 95\% confidence intervals
+Draws the classic event-study coefficient plot with confidence intervals
 for a \code{pretrends_test} object. The omitted reference period (relative
 time = -1) is shown as a point at zero.
 }
 \examples{
 pt <- test_pretrends(staggered_data, unit, time, outcome, treat, n_lags = 3)
 ggplot2::autoplot(pt)
+ggplot2::autoplot(pt, conf.level = 0.90)
 
 }

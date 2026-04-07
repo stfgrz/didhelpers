@@ -24,15 +24,19 @@ rather, it is the companion toolkit you wish you had when setting up a staggered
 DiD analysis.
 
 The package offers three core diagnostics and a convenience wrapper:
+
 1. **Treatment timing plot** --- see when each unit gets treated.
-2. **Pre-trends test** --- event-study regression to check the parallel trends assumption.
-3. **Bacon decomposition summary** --- understand which 2x2 comparisons drive your TWFE estimate.
+2. **Pre-trends test** --- event-study regression to check the parallel trends
+   assumption.
+3. **Bacon decomposition summary** --- understand which 2×2 comparisons drive
+   your TWFE estimate.
 4. **Full diagnostics report** --- run everything at once.
 
 ## Setup
 
 ```{r setup}
 library(didhelpers)
+library(ggplot2)
 ```
 
 We will use the package's built-in simulated dataset, which has 30 units
@@ -64,6 +68,7 @@ spot the staggered adoption pattern and identify never-treated units.
 The parallel trends assumption is central to any DiD design.
 `test_pretrends()` runs an event-study regression with unit and time fixed
 effects and returns pre-treatment lead coefficients:
+
 ```{r pretrends}
 pt <- test_pretrends(staggered_data, unit, time, outcome, treat, n_lags = 3)
 pt$coefficients
@@ -81,13 +86,19 @@ be small and statistically insignificant. The `autoplot()` method produces the
 classic event-study coefficient plot:
 
 ```{r es-plot}
-ggplot2::autoplot(pt)
+autoplot(pt)
+```
+
+You can adjust the confidence level (default is 95%):
+
+```{r es-plot-90}
+autoplot(pt, conf.level = 0.90)
 ```
 
 ## 3. Bacon Decomposition
 
 Goodman-Bacon (2021) showed that the two-way fixed effects (TWFE) estimator
-is a weighted average of all possible 2x2 DD comparisons. Some of these
+is a weighted average of all possible 2×2 DD comparisons. Some of these
 comparisons may use already-treated units as controls, leading to potential
 bias. `bacon_weight_summary()` provides a clean summary:
 
@@ -96,11 +107,11 @@ bs <- bacon_weight_summary(staggered_data, unit, time, outcome, treat)
 bs$summary
 ```
 
-The scatter plot shows each 2x2 comparison's estimate against its weight,
+The scatter plot shows each 2×2 comparison's estimate against its weight,
 colored by comparison type:
 
 ```{r bacon-plot}
-bs$plot
+autoplot(bs)
 ```
 
 ## 4. Full Diagnostics Report
@@ -115,6 +126,13 @@ report
 
 Individual components are accessible via `report$treatment_plot`,
 `report$pretrends`, and `report$bacon`.
+
+If you have the **patchwork** package installed, `plot(report)` produces a
+composite figure with all three diagnostics arranged together:
+
+```{r composite-plot, eval = requireNamespace("patchwork", quietly = TRUE), fig.width = 10, fig.height = 8}
+plot(report)
+```
 
 ## 5. Printing and Summaries
 
@@ -149,6 +167,10 @@ tidy(pt)
 glance(pt)
 ```
 
+```{r broom-augment}
+head(augment(pt))
+```
+
 ```{r broom-bacon}
 tidy(bs, type = "summary")
 glance(bs)
@@ -156,6 +178,19 @@ glance(bs)
 
 See `vignette("publishing-output")` for full details on table export and
 figure customization.
+
+## Input Validation
+
+All core functions validate their inputs and return informative error messages
+if something is wrong:
+
+```{r validation, error = TRUE}
+# Incorrect column name
+test_pretrends(staggered_data, unit, time, outcome, wrong_col)
+
+# Non-data-frame input
+test_pretrends("not a data frame", unit, time, outcome, treat)
+```
 
 ## Relationship to Other Packages
 
@@ -166,12 +201,13 @@ estimator package. Here is how it relates to the ecosystem:
 |:--------|:-------------|:------|
 | **bacondecomp** | Hard dependency | `bacon_weight_summary()` wraps `bacondecomp::bacon()`, adding S3 class, tidy output, broom methods, and gt/kable tables. |
 | **fixest** | Hard dependency | `test_pretrends()` uses `fixest::feols()` internally. fixest's own `iplot()` is more flexible for fixest-native workflows; didhelpers bundles the event-study + F-test + broom integration into a single call. |
-| **HonestDiD** | Complementary | Provides sensitivity analysis for parallel trends violations. No overlap -- could be used *after* `test_pretrends()` flags concerns. |
+| **HonestDiD** | Complementary | Provides sensitivity analysis for parallel trends violations. No overlap — could be used *after* `test_pretrends()` flags concerns. |
 | **did2s** | No overlap | Implements the Gardner (2022) imputation estimator. didhelpers diagnoses TWFE; did2s replaces it. |
 | **DIDmultiplegt** | No overlap | Suite of robust DiD estimators. didhelpers could diagnose data *before* running these estimators. |
-| **staggered** | Minimal overlap | Provides Callaway-Sant'Anna and Sun-Abraham estimators with their own plot methods. These plot *estimates* from robust estimators; didhelpers plots *TWFE diagnostics*. |
+| **staggered** | Minimal overlap | Provides Callaway–Sant'Anna and Sun–Abraham estimators with their own plot methods. These plot *estimates* from robust estimators; didhelpers plots *TWFE diagnostics*. |
 
 ## Next Steps
+
 These diagnostics help you decide whether a standard TWFE estimator is
 appropriate for your data. If the Bacon decomposition reveals substantial
 weight on problematic comparisons (e.g., already-treated as controls), or if

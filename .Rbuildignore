@@ -3,3 +3,6 @@
 ^data-raw$
 ^\.DS_Store$
 ^\.github$
+^\.claude$
+^quarto_demo$
+^LICENSE\.md$

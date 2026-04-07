@@ -37,7 +37,7 @@ All diagnostic objects are first-class R citizens with a full suite of output me
 
 ```r
 # install.packages("devtools")
-devtools::install_github("stefanograziosi/didhelpers")
+devtools::install_github("stfgrz/didhelpers")
 ```
 
 Optional dependencies unlock additional output formats:
@@ -68,8 +68,8 @@ plot_treatment_timing(staggered_data, unit, time, treat)
 pt <- test_pretrends(staggered_data, unit, time, outcome, treat)
 pt                        # Clean console summary
 summary(pt)               # R-squared, adj. R-squared
-autoplot(pt)              # Event-study coefficient plot
-plot(pt)                  # Same, via plot()
+autoplot(pt)              # Event-study coefficient plot (95% CI)
+autoplot(pt, conf.level = 0.90)  # With 90% CI
 
 # ── 3. Bacon decomposition ───────────────────────────────────────────────────
 bs <- bacon_weight_summary(staggered_data, unit, time, outcome, treat)
@@ -115,6 +115,15 @@ as_table(bs, format = "gt")
 # kableExtra table (PDF / classic RMarkdown)
 as_table(pt, format = "kable")
 as_table(bs, format = "kable")
+```
+
+## 📖 Vignettes
+
+Get started with the package vignettes:
+
+```r
+vignette("getting-started", package = "didhelpers")
+vignette("publishing-output", package = "didhelpers")
 ```
 
 ## 🔗 Relationship to Other Packages

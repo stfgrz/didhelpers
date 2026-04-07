@@ -70,12 +70,11 @@ tidy.pretrends_test <- function(x, conf.int = TRUE, conf.level = 0.95, ...) {
 #' @export
 glance.pretrends_test <- function(x, ...) {
   mod <- x$model
-  sm  <- summary(mod)
 
   tibble::tibble(
     nobs          = as.integer(stats::nobs(mod)),
-    r.squared     = sm$r2,
-    adj.r.squared = sm$adj.r2,
+    r.squared     = fixest::r2(mod, "r2"),
+    adj.r.squared = fixest::r2(mod, "ar2"),
     f_statistic   = x$f_test$statistic,
     f_p_value     = x$f_test$p_value,
     n_leads       = sum(grepl("^lead_", x$coefficients$term)),

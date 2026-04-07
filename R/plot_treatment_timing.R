@@ -22,9 +22,18 @@
 #' @importFrom stats reorder
 #' @export
 plot_treatment_timing <- function(data, unit, time, treat) {
+  if (!is.data.frame(data)) stop("`data` must be a data frame.", call. = FALSE)
+
   unit_str <- rlang::as_label(rlang::enquo(unit))
   time_str <- rlang::as_label(rlang::enquo(time))
   treat_str <- rlang::as_label(rlang::enquo(treat))
+
+  required <- c(unit_str, time_str, treat_str)
+  missing_cols <- setdiff(required, names(data))
+  if (length(missing_cols) > 0) {
+    stop("Column(s) not found in `data`: ",
+         paste(missing_cols, collapse = ", "), call. = FALSE)
+  }
 
   # Compute cohort: first treated period per unit
   treated_rows <- data[data[[treat_str]] == 1, ]

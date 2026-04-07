@@ -34,10 +34,23 @@
 #' @importFrom ggplot2 ggplot aes geom_point labs theme_minimal scale_color_brewer
 #' @export
 bacon_weight_summary <- function(data, unit, time, outcome, treat) {
+  if (!is.data.frame(data)) stop("`data` must be a data frame.", call. = FALSE)
+
   unit_str <- rlang::as_label(rlang::enquo(unit))
   time_str <- rlang::as_label(rlang::enquo(time))
   outcome_str <- rlang::as_label(rlang::enquo(outcome))
   treat_str <- rlang::as_label(rlang::enquo(treat))
+
+  required <- c(unit_str, time_str, outcome_str, treat_str)
+  missing_cols <- setdiff(required, names(data))
+  if (length(missing_cols) > 0) {
+    stop("Column(s) not found in `data`: ",
+         paste(missing_cols, collapse = ", "), call. = FALSE)
+  }
+
+  if (!all(data[[treat_str]] %in% c(0L, 1L, 0, 1))) {
+    stop("`", treat_str, "` must be a binary 0/1 indicator.", call. = FALSE)
+  }
 
   # Build formula and run bacon decomposition
   fml <- stats::as.formula(paste(outcome_str, "~", treat_str))
